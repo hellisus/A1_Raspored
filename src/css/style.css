@@ -1,0 +1,802 @@
+/*
+    OPTIMIZED STYLE - Combined from stylesheets/style.css and src/css/style.css
+*/
+
+/* ========================================
+   FONT IMPORTS
+======================================== */
+@import "https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700";
+@import "https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&family=League+Gothic&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap";
+
+/* ========================================
+   BASE STYLES
+======================================== */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #f8f9fa;
+}
+
+p {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.1em;
+    font-weight: 300;
+    line-height: 1.7em;
+    color: #999;
+}
+
+a, a:hover, a:focus {
+    color: inherit;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+/* ========================================
+   UTILITY CLASSES
+======================================== */
+.btn-floating {
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -o-user-select: none;
+}
+
+.material-icons {
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -o-user-select: none;
+}
+
+td input {
+    font-style: oblique;
+    text-align: center;
+}
+
+label {
+    font-size: 1.5rem;
+}
+
+.first_in_content {
+    padding-top: 15rem !important;
+}
+
+.divider_h {
+    display: block;
+    width: 15px;
+}
+
+.sekcija {
+    font-weight: 500;
+}
+
+.nalog {
+    font-weight: 500;
+}
+
+.main_content {
+    padding-top: 0.5rem;
+}
+
+/* ========================================
+   NAVBAR/TOPBAR STYLES
+======================================== */
+.navbar {
+    padding: 15px 20px;
+    background: #667eea !important;
+    color: #fff !important;
+    border: none;
+    border-radius: 0;
+    margin-bottom: 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+}
+
+.navbar-btn {
+    box-shadow: none;
+    outline: none !important;
+    border: none;
+}
+
+/* Modern Topbar Styles */
+.navbar .btn {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.navbar .btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    color: #fff;
+}
+
+.navbar .btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.25);
+}
+
+.navbar .nav-link {
+    color: #fff !important;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 0 2px;
+}
+
+.navbar * {
+    color: #fff !important;
+}
+
+.navbar .nav-link:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+    color: #fff !important;
+}
+
+.navbar .nav-item.active .nav-link {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* Topbar Icons and Typography */
+.navbar .fas, .navbar .far {
+    margin-right: 6px;
+    font-size: 0.9em;
+}
+
+.navbar .nav-link i {
+    transition: transform 0.3s ease;
+}
+
+.navbar .nav-link:hover i {
+    transform: scale(1.1);
+}
+
+/* ========================================
+   SIDEBAR STYLES
+======================================== */
+.wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+#sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    background: #667eea;
+    color: #fff;
+    transition: all 0.3s;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+#sidebar.active {
+    margin-left: -250px !important;
+    transform: translateX(-100%);
+}
+
+#sidebar .sidebar-header {
+    padding: 20px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+#sidebar .sidebar-header img {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+    transition: transform 0.3s ease;
+}
+
+#sidebar .sidebar-header img:hover {
+    transform: scale(1.05);
+}
+
+#sidebar ul.components {
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+#sidebar ul p {
+    color: #fff;
+    padding: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9em;
+}
+
+#sidebar ul li a {
+    padding: 12px 20px;
+    font-size: 1em;
+    display: block;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    margin: 2px 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+#sidebar ul li a:hover {
+    color: #667eea;
+    background: rgba(255,255,255,0.9);
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+#sidebar ul li.active>a,
+a[aria-expanded="true"] {
+    color: #fff;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+a[data-toggle="collapse"] {
+    position: relative;
+}
+
+.dropdown-toggle::after {
+    display: block;
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+}
+
+ul ul a {
+    font-size: 0.9em !important;
+    padding-left: 30px !important;
+    background: rgba(255,255,255,0.05);
+    border-left: 3px solid rgba(255,255,255,0.3);
+    margin-left: 10px;
+}
+
+ul.CTAs {
+    padding: 20px;
+}
+
+ul.CTAs a {
+    text-align: center;
+    font-size: 0.9em !important;
+    display: block;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+a.download {
+    background: #fff;
+    color: #7386D5;
+}
+
+a.article,
+a.article:hover {
+    background: #6d7fcc !important;
+    color: #fff !important;
+}
+
+/* ========================================
+   CONTENT STYLES
+======================================== */
+#content {
+    width: 100%;
+    padding: 20px;
+    min-height: 100vh;
+    transition: all 0.3s;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    margin: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Container Styles */
+.containter, .container {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    padding: 25px;
+    margin: 15px 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(5px);
+}
+
+/* Table Container Styles */
+.containter .table, .container .table {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.containter .table thead th, .container .table thead th {
+    background: #e9ecef; /* jednobojna pozadina */
+    color: #212529;
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9em;
+}
+
+.containter .table tbody tr, .container .table tbody tr {
+    transition: all 0.3s ease;
+}
+
+.containter .table tbody tr:hover, .container .table tbody tr:hover {
+    background: rgba(102, 126, 234, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Clickable Row Styles */
+.clickable-row {
+    transition: all 0.3s ease;
+}
+
+.clickable-row:hover {
+    background: rgba(102, 126, 234, 0.15) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.clickable-row:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Heading Styles */
+.containter h2, .container h2 {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #667eea;
+    display: inline-block;
+}
+
+.containter h2 i, .container h2 i {
+    color: #667eea;
+    margin-right: 10px;
+}
+
+/* Card-like Container Enhancement */
+.containter, .container {
+    position: relative;
+    overflow: hidden;
+}
+
+.containter::before, .container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px 12px 0 0;
+}
+
+/* Table Row Enhancements */
+.containter .table tbody td, .container .table tbody td {
+    padding: 15px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Uklanjanje crnih ivica sa strane na prvom i poslednjem redu */
+.containter .table tbody tr:first-child td, .container .table tbody tr:first-child td {
+    border-left: none;
+    border-right: none;
+}
+
+.containter .table tbody tr:last-child td, .container .table tbody tr:last-child td {
+    border-left: none;
+    border-right: none;
+}
+
+/* Uklanjanje svih bočnih ivica za tabele */
+.containter .table td, .container .table td,
+.containter .table th, .container .table th {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* Dodatni stilovi za uklanjanje svih bočnih ivica */
+table.table td,
+table.table th,
+.table td,
+.table th {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* Uklanjanje ivica sa prve i poslednje kolone */
+.table td:first-child,
+.table th:first-child,
+.table td:last-child,
+.table th:last-child {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* Agresivno uklanjanje svih bočnih ivica */
+table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+table td,
+table th {
+    border-left: none !important;
+    border-right: none !important;
+    border-top: 1px solid #dee2e6 !important;
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+/* Uklanjanje ivica sa prve i poslednje kolone u svim tabelama */
+table td:first-child,
+table th:first-child {
+    border-left: none !important;
+}
+
+table td:last-child,
+table th:last-child {
+    border-right: none !important;
+}
+
+.containter .table tbody td h3, .container .table tbody td h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.containter .table tbody td a, .container .table tbody td a {
+    color: #667eea;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.containter .table tbody td a:hover, .container .table tbody td a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
+/* Responsive Container */
+@media (max-width: 768px) {
+    .containter, .container {
+        margin: 10px 5px;
+        padding: 15px;
+        border-radius: 8px;
+    }
+    
+    #content {
+        margin: 10px;
+        padding: 15px;
+        border-radius: 10px;
+    }
+}
+
+.line {
+    width: 100%;
+    height: 1px;
+    border-bottom: 1px dashed #ddd;
+    margin: 40px 0;
+}
+
+/* ========================================
+   LOGIN PAGE STYLES (index.php)
+======================================== */
+.exo-2-standard {
+    background: #f8f9fa;
+}
+
+.exo-2-standard .min-vh-100 {
+    padding: 2rem 1rem;
+}
+
+.exo-2-standard img[alt*="logo"],
+.exo-2-standard img[src*="raz-invest-logo.png"] {
+    max-width: 180px;
+    height: auto;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 6px 20px rgba(0,0,0,.12));
+}
+
+.exo-2-standard h1 {
+    font-weight: 700;
+    letter-spacing: .3px;
+    margin: .25rem 0 .5rem;
+    color: #1f2a44;
+}
+
+.exo-2-standard p {
+    color: #5f6b85;
+    margin-bottom: 1.25rem;
+}
+
+/* Login form styles */
+.exo-2-standard form {
+    background: #ffffff;
+    border-radius: .75rem;
+    padding: 1.25rem;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 10px 30px rgba(31,42,68,.08), 0 2px 10px rgba(31,42,68,.04);
+    border: 1px solid rgba(31,42,68,.06);
+}
+
+.exo-2-standard .auth-card {
+    background: #ffffff;
+    border-radius: .75rem;
+    padding: 1.25rem;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 10px 30px rgba(31,42,68,.08), 0 2px 10px rgba(31,42,68,.04);
+    border: 1px solid rgba(31,42,68,.06);
+}
+
+.exo-2-standard .auth-card h1,
+.exo-2-standard .auth-card p {
+    text-align: center;
+}
+
+.exo-2-standard .form-group {
+    margin-bottom: 1rem;
+}
+
+.exo-2-standard label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2f3b59;
+}
+
+.exo-2-standard .form-control {
+    border-radius: .5rem;
+    border-color: #d9deea;
+    padding: .6rem .75rem;
+    transition: box-shadow .2s ease, border-color .2s ease;
+}
+
+.exo-2-standard .form-control::placeholder {
+    color: #a3aec6;
+}
+
+.exo-2-standard .form-control:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 .25rem rgba(25,135,84,.25);
+}
+
+.exo-2-standard #euro_val {
+    font-variant-numeric: tabular-nums;
+}
+
+.exo-2-standard .btn-success {
+    border-radius: .5rem;
+    padding: .7rem 1rem;
+    background: linear-gradient(180deg, #22c55e, #16a34a);
+    border: 1px solid #128a3e;
+    box-shadow: 0 6px 16px rgba(34,197,94,.25);
+    transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.exo-2-standard .btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(34,197,94,.28);
+    background: linear-gradient(180deg, #26d167, #149e46);
+}
+
+.exo-2-standard .btn-success:active {
+    transform: translateY(0);
+}
+
+/* ========================================
+   FONT CLASSES
+======================================== */
+.roboto-standard {
+    font-family: "Roboto", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-style: normal;
+    font-variation-settings: "wdth" 100;
+}
+
+.exo-2-standard {
+    font-family: "Exo 2", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 300;
+    font-style: normal;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+======================================== */
+@media screen and (max-width: 900px) {
+    .logo_slika {
+        visibility: hidden;
+    }
+}
+
+/* ========================================
+   MOBILE TABLE RESPONSIVE STYLES
+======================================== */
+@media (max-width: 768px) {
+    /* Table container with horizontal scroll */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Table styling for mobile */
+    .table {
+        min-width: 600px; /* Ensure table doesn't get too compressed */
+        font-size: 0.9rem;
+    }
+    
+    /* Table headers for mobile */
+    .table thead th {
+        font-size: 0.8rem;
+        padding: 8px 6px;
+        white-space: nowrap;
+    }
+    
+    /* Table cells for mobile */
+    .table tbody td {
+        padding: 10px 6px;
+        font-size: 0.85rem;
+    }
+    
+    /* Table links for mobile */
+    .table tbody td h3 {
+        font-size: 1rem;
+        margin: 0;
+    }
+    
+    .table tbody td a {
+        font-size: 0.9rem;
+        word-break: break-word;
+    }
+    
+    /* Container adjustments for mobile */
+    .containter, .container {
+        margin: 5px;
+        padding: 10px;
+        border-radius: 8px;
+    }
+    
+    /* Content adjustments for mobile */
+    #content {
+        margin: 5px;
+        padding: 10px;
+        border-radius: 8px;
+    }
+    
+    /* Hide less important columns on very small screens */
+    @media (max-width: 480px) {
+        .table th:nth-child(4),
+        .table td:nth-child(4),
+        .table th:nth-child(5),
+        .table td:nth-child(5) {
+            display: none;
+        }
+        
+        .table {
+            min-width: 400px;
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        padding: 10px 15px;
+    }
+    
+    .navbar .btn {
+        padding: 6px 12px;
+        font-size: 0.9em;
+    }
+    
+    .navbar .nav-link {
+        padding: 6px 8px;
+        font-size: 0.9em;
+    }
+    
+    #sidebar {
+        margin-left: -250px !important;
+        transform: translateX(-100%);
+    }
+    
+    #sidebar.active {
+        margin-left: 0 !important;
+        transform: translateX(0);
+    }
+    
+    #sidebarCollapse span {
+        display: none;
+    }
+    
+    .exo-2-standard form {
+        padding: 1rem;
+        border-radius: .65rem;
+        box-shadow: 0 8px 22px rgba(31,42,68,.08), 0 1px 6px rgba(31,42,68,.05);
+    }
+    
+    .exo-2-standard h1 {
+        font-size: 1.5rem;
+    }
+}
+
+/* ========================================
+   MAP STYLES
+======================================== */
+#map {
+    height: 300px;
+    width: 300px;
+    position: absolute;
+}
+
+h3 {
+    font-variant: small-caps !important;
+}
+
+/* ========================================
+   GLAVNI.PHP TABLE STYLES
+======================================== */
+.cell-indicator { 
+    border-radius: 6px; 
+    padding: 6px 10px; 
+    display: inline-block; 
+    min-width: 120px; 
+    text-align: center; 
+}
+
+.cell-ok { 
+    background-color: #d4edda !important; 
+    color: #155724 !important; 
+}
+
+.cell-warn { 
+    background-color: #fff3cd !important; 
+    color: #856404 !important; 
+}
+
+.cell-bad { 
+    background-color: #f8d7da !important; 
+    color: #721c24 !important; 
+}
+
+.objekt-separator { 
+    border-bottom: 4px solid #007bff; 
+    border-top: 2px solid #e9ecef;
+}
+
+.objekt-separator:last-child { 
+    border-bottom: 4px solid #007bff; 
+}
+
+.objekt-group { 
+    border: 2px solid #007bff; 
+    margin-bottom: 10px; 
+    border-radius: 8px;
+}
+
+.objekt-group th:first-child { 
+    border-left: none !important; 
+}
+
+.objekt-separator th:first-child { 
+    border-left: none !important; 
+}
