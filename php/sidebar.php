@@ -10,7 +10,7 @@
                <a href="../php/import.php">Uvoz baze</a>
            </li>
            <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
-               <a href="../php/cenovnik_objekta.php">CENOVNIK ZA OBJEKAT</a>
+               <a href="../php/raspored.php">Pregled rasporeda</a>
            </li>
            <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
                <a href="../php/uplate_po_mesecima.php"><i class="fas fa-calendar-alt"></i> UPLATE PO MESECIMA</a>
