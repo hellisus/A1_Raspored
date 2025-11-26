@@ -84,6 +84,11 @@ if (!isset($_SESSION['Ime'])) {
                                                 }
                                                 // Čitanje zaglavlja
                                                 $headers = fgetcsv($handle, 0, ";");
+
+                                                // Detekcija i preskakanje "sep=;" linije koju Excel nekad ubacuje
+                                                if ($headers && isset($headers[0]) && stripos($headers[0], 'sep=') === 0) {
+                                                    $headers = fgetcsv($handle, 0, ";");
+                                                }
                                             }
                                         } else {
                                             // XLSX logika

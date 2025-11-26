@@ -8,18 +8,35 @@ if (!isset($_SESSION['Ime'])) {
 // --- Logic for Schedule ---
 
 // 1. Get Filters
-$month = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('n');
+// Support for multiple months: input name 'month[]'
+// If no month is selected, default to current month
+if (isset($_GET['month']) && is_array($_GET['month'])) {
+    $selectedMonths = array_map('intval', $_GET['month']);
+} elseif (isset($_GET['month']) && !is_array($_GET['month'])) {
+    // Fallback for single value
+    $selectedMonths = [(int)$_GET['month']];
+} else {
+    $selectedMonths = [(int)date('n')];
+}
+
 $year = isset($_GET['year']) ? (int)$_GET['year'] : (int)date('Y');
 
 // 2. Fetch Data
 $crud = new CRUD('A1_Raspored');
-// Use prepare/execute for safety
+
+// Build placeholder string for IN clause (e.g., "?,?,?")
+$placeholders = implode(',', array_fill(0, count($selectedMonths), '?'));
+
 $sql = "SELECT * FROM glavna_tabela 
-        WHERE MONTH(`Scheduled start`) = ? 
+        WHERE MONTH(`Scheduled start`) IN ($placeholders) 
           AND YEAR(`Scheduled start`) = ? 
         ORDER BY `Scheduled start` ASC";
+
+// Combine parameters: months first, then year
+$params = array_merge($selectedMonths, [$year]);
+
 $stmt = $crud->prepare($sql);
-$stmt->execute([$month, $year]);
+$stmt->execute($params);
 $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 3. Group Data
@@ -38,12 +55,6 @@ foreach ($jobs as $job) {
     $yearNum = $dateObj->format('Y'); 
     
     // Handle week 52/53 belonging to previous year or week 1 to next year
-    // setISODate logic aligns with 'W'
-    // If month is January, week 52/53 is from previous year.
-    // If month is December, week 1 is from next year.
-    // We need a unique key for the week. 
-    // Using the year of the Monday of that week is safest.
-    
     $dto = new DateTime();
     $dto->setISODate($yearNum, $weekNum);
     $weekYear = $dto->format('Y');
@@ -136,6 +147,7 @@ function getDaysInWeek($year, $week) {
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <script src="../src/js/funkcije.js"></script>
   
   <style>
@@ -158,6 +170,10 @@ function getDaysInWeek($year, $week) {
           background: #f0f0f0;
           height: 50px;
       }
+      /* Select2 custom styles */
+      .select2-container .select2-selection--multiple {
+          min-height: 38px;
+      }
   </style>
 
 </head>
@@ -178,20 +194,22 @@ function getDaysInWeek($year, $week) {
                     <div class="card-body py-2">
                         <form method="GET" class="form-inline">
                             <label class="mr-2">Mesec:</label>
-                            <select name="month" class="form-control mr-3">
-                                <?php 
-                                // Serbian month names
-                                $monthsSerbian = [
-                                    1 => 'Januar', 2 => 'Februar', 3 => 'Mart', 4 => 'April', 
-                                    5 => 'Maj', 6 => 'Jun', 7 => 'Jul', 8 => 'Avgust', 
-                                    9 => 'Septembar', 10 => 'Oktobar', 11 => 'Novembar', 12 => 'Decembar'
-                                ];
-                                for($m=1; $m<=12; $m++) {
-                                    $selected = ($m == $month) ? 'selected' : '';
-                                    echo "<option value='$m' $selected>$m ({$monthsSerbian[$m]})</option>";
-                                }
-                                ?>
-                            </select>
+                            <div class="mr-3" style="min-width: 300px;">
+                                <select name="month[]" class="form-control select2-months" multiple="multiple" style="width: 100%;">
+                                    <?php 
+                                    // Serbian month names
+                                    $monthsSerbian = [
+                                        1 => 'Januar', 2 => 'Februar', 3 => 'Mart', 4 => 'April', 
+                                        5 => 'Maj', 6 => 'Jun', 7 => 'Jul', 8 => 'Avgust', 
+                                        9 => 'Septembar', 10 => 'Oktobar', 11 => 'Novembar', 12 => 'Decembar'
+                                    ];
+                                    for($m=1; $m<=12; $m++) {
+                                        $selected = in_array($m, $selectedMonths) ? 'selected' : '';
+                                        echo "<option value='$m' $selected>$m ({$monthsSerbian[$m]})</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
                             
                             <label class="mr-2">Godina:</label>
                             <select name="year" class="form-control mr-3">
@@ -321,6 +339,13 @@ function getDaysInWeek($year, $week) {
 
     <script>
     $(function() {
+        // Initialize Select2 for months
+        $('.select2-months').select2({
+            placeholder: "Izaberite mesece",
+            allowClear: true,
+            theme: 'bootstrap-5'
+        });
+
         var changes = {};
 
         function updateChangesButton() {

@@ -12,49 +12,7 @@
            <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
                <a href="../php/raspored.php">Pregled rasporeda</a>
            </li>
-           <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
-               <a href="../php/uplate_po_mesecima.php"><i class="fas fa-calendar-alt"></i> UPLATE PO MESECIMA</a>
-           </li>
-           
-           <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
-               <a href="../php/kalkulator.php"><i class="fas fa-calculator"></i> KALKULATOR CENA</a>
-           </li>
-           <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
-               <a href="#pregledDropdown" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">PREGLED</a>
-               <ul class="collapse list-unstyled" id="pregledDropdown">
-                   <li><a href="../php/glavni.php">Pregled objekata</a></li>
-                   <li><a href="../php/pregled_stanova.php">Pregled stanova</a></li>
-                   <li><a href="../php/pregled_lokala.php">Pregled lokala</a></li>
-                   <li><a href="../php/pregled_garaza.php">Pregled garaža</a></li>
-                   <li><a href="../php/pregled_parking_mesta.php">Pregled parking mesta</a></li>
-                   <li><a href="../php/pregled_kupaca.php">Pregled kupaca</a></li>
-               </ul>
-           </li>
-
-           <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
-               <a href="#unosDropdown" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">UNOS</a>
-               <ul class="collapse list-unstyled" id="unosDropdown">
-                   <li><a href="../php/unos_objekta.php">Unesi objekat</a></li>
-                   <li><a href="../php/unos_stana.php">Unesi stan</a></li>
-                   <li><a href="../php/unos_lokala.php">Unesi lokal</a></li>
-                   <li><a href="../php/unos_garaze.php">Unesi garažu</a></li>
-                   <li><a href="../php/unos_parking_mesta.php">Unesi parking mesto</a></li>
-                   <li><a href="../php/unos_kupca.php">Unesi kupca</a></li>
-               </ul>
-           </li>
-
-
-           <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
-               <a href="#izmenaDropdown" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">IZMENA</a>
-               <ul class="collapse list-unstyled" id="izmenaDropdown">
-                   <li><a href="../php/lista_objekata.php">Izmeni objekat</a></li>
-                   <li><a href="../php/lista_stanova.php">Izmeni stan</a></li>
-                   <li><a href="../php/lista_lokala.php">Izmeni lokal</a></li>
-                   <li><a href="../php/lista_garaza.php">Izmeni garažu</a></li>
-                   <li><a href="../php/lista_parking_mesta.php">Izmeni parking mesto</a></li>
-                   <li><a href="../php/lista_kupaca.php">Izmeni kupca</a></li>
-               </ul>
-           </li>
+          
 
           <!-- <li class="<?php if ($_SESSION['tip'] != 1) echo "d-none" ?>">
                <a href="../php/bilans.php">BILANS STANJA</a>

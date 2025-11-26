@@ -84,9 +84,12 @@ if (!isset($_SESSION['Ime'])) {
 
                         // Filtriranje
                         foreach ($columns as $col) {
-                            if (isset($_GET['filter_' . $col]) && $_GET['filter_' . $col] !== '') {
+                            // Zamena razmaka donjom crtom u imenu input polja, jer PHP automatski konvertuje razmake u tačke ili donje crte u $_GET ključevima
+                            $inputName = 'filter_' . str_replace(' ', '_', $col);
+                            
+                            if (isset($_GET[$inputName]) && $_GET[$inputName] !== '') {
                                 $where[] = "`$col` LIKE ?";
-                                $params[] = "%" . $_GET['filter_' . $col] . "%";
+                                $params[] = "%" . $_GET[$inputName] . "%";
                             }
                         }
 
@@ -153,9 +156,9 @@ if (!isset($_SESSION['Ime'])) {
                                                     </div>
                                                     <div class="mt-1">
                                                         <input type="text" 
-                                                               name="filter_<?php echo $col; ?>" 
+                                                               name="filter_<?php echo str_replace(' ', '_', $col); ?>" 
                                                                class="form-control form-control-sm" 
-                                                               value="<?php echo isset($_GET['filter_' . $col]) ? htmlspecialchars($_GET['filter_' . $col]) : ''; ?>" 
+                                                               value="<?php echo isset($_GET['filter_' . str_replace(' ', '_', $col)]) ? htmlspecialchars($_GET['filter_' . str_replace(' ', '_', $col)]) : ''; ?>" 
                                                                onkeydown="if(event.key === 'Enter'){ this.form.submit(); }">
                                                     </div>
                                                 </th>
@@ -171,7 +174,16 @@ if (!isset($_SESSION['Ime'])) {
                                             <?php foreach ($data as $row): ?>
                                                 <tr>
                                                     <?php foreach ($columns as $col): ?>
-                                                        <td><?php echo htmlspecialchars($row[$col] ?? ''); ?></td>
+                                                        <td>
+                                                            <?php 
+                                                            if ($col === 'Scheduled start' && !empty($row[$col])) {
+                                                                $dateVal = new DateTime($row[$col]);
+                                                                echo $dateVal->format('d.m.Y H:i'); // Prikaz datuma i vremena
+                                                            } else {
+                                                                echo htmlspecialchars($row[$col] ?? ''); 
+                                                            }
+                                                            ?>
+                                                        </td>
                                                     <?php endforeach; ?>
                                                 </tr>
                                             <?php endforeach; ?>
