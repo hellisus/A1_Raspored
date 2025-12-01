@@ -12,6 +12,9 @@
            <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
                <a href="../php/raspored.php">Pregled rasporeda</a>
            </li>
+           <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
+               <a href="../php/raspored_lokalna.php">Lokalna tabela</a>
+           </li>
           
 
           <!-- <li class="<?php if ($_SESSION['tip'] != 1) echo "d-none" ?>">

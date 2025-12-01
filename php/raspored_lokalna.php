@@ -27,7 +27,7 @@ $crud = new CRUD('A1_Raspored');
 // Build placeholder string for IN clause (e.g., "?,?,?")
 $placeholders = implode(',', array_fill(0, count($selectedMonths), '?'));
 
-$sql = "SELECT * FROM glavna_tabela 
+$sql = "SELECT * FROM lokalna_tabela 
         WHERE MONTH(`Scheduled start`) IN ($placeholders) 
           AND YEAR(`Scheduled start`) = ? 
           AND (`Current state` IS NULL OR `Current state` NOT IN ('Finalized', 'Canceled'))
@@ -39,6 +39,63 @@ $params = array_merge($selectedMonths, [$year]);
 $stmt = $crud->prepare($sql);
 $stmt->execute($params);
 $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 2b. Load reference data from glavna_tabela for comparison
+$mainJobsById = [];
+$jobIds = array_column($jobs, 'ID');
+if (!empty($jobIds)) {
+    $mainPlaceholders = implode(',', array_fill(0, count($jobIds), '?'));
+    $mainSql = "SELECT * FROM glavna_tabela WHERE ID IN ($mainPlaceholders)";
+    $mainStmt = $crud->prepare($mainSql);
+    $mainStmt->execute($jobIds);
+    $mainRows = $mainStmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($mainRows as $mainRow) {
+        if (isset($mainRow['ID'])) {
+            $mainJobsById[$mainRow['ID']] = $mainRow;
+        }
+    }
+}
+
+$comparisonFields = [
+    'Scheduled start',
+    'Assignees',
+    'City',
+    'Address',
+    'House Number',
+    'WO_InstallationType',
+    'Customer Name',
+    'Contact Phone On Location',
+    'Adapter ID',
+    'Woid'
+];
+
+foreach ($jobs as &$job) {
+    $jobId = $job['ID'] ?? null;
+    $hasDifference = false;
+
+    if (!$jobId || !isset($mainJobsById[$jobId])) {
+        $hasDifference = true;
+    } else {
+        $mainJob = $mainJobsById[$jobId];
+        foreach ($comparisonFields as $field) {
+            $localVal = isset($job[$field]) ? trim((string)$job[$field]) : '';
+            $mainVal = isset($mainJob[$field]) ? trim((string)$mainJob[$field]) : '';
+
+            if ($field === 'Scheduled start') {
+                $localVal = $localVal !== '' ? date('Y-m-d H:i:s', strtotime($localVal)) : '';
+                $mainVal = $mainVal !== '' ? date('Y-m-d H:i:s', strtotime($mainVal)) : '';
+            }
+
+            if ($localVal !== $mainVal) {
+                $hasDifference = true;
+                break;
+            }
+        }
+    }
+
+    $job['has_difference'] = $hasDifference;
+}
+unset($job);
 
 // 3. Group Data
 // Structure: $schedule[week_number][assignee][date_string] = [job1, job2...]
@@ -152,6 +209,30 @@ function getDaysInWeek($year, $week) {
           border-radius: 4px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       }
+      .job-card.job-card-diff {
+          border: 2px solid #dc3545;
+          box-shadow: 0 0 10px rgba(220,53,69,0.6);
+          animation: pulseDiff 1.5s ease-in-out infinite;
+      }
+      @keyframes pulseDiff {
+          0% {
+              box-shadow: 0 0 6px rgba(220,53,69,0.5);
+          }
+          50% {
+              box-shadow: 0 0 16px rgba(220,53,69,0.85);
+          }
+          100% {
+              box-shadow: 0 0 6px rgba(220,53,69,0.5);
+          }
+      }
+      .job-card-line-copied {
+          animation: clipboardFlash 1s ease;
+      }
+      @keyframes clipboardFlash {
+          0% { background-color: rgba(255, 230, 0, 0.6); }
+          60% { background-color: rgba(255, 230, 0, 0.2); }
+          100% { background-color: transparent; }
+      }
       .droppable-cell {
           min-height: 100px;
           height: 100%;
@@ -166,9 +247,24 @@ function getDaysInWeek($year, $week) {
           background: #f0f0f0;
           height: 50px;
       }
+      .job-card.saving {
+          opacity: 0.6;
+          pointer-events: none;
+      }
       /* Select2 custom styles */
       .select2-container .select2-selection--multiple {
           min-height: 38px;
+      }
+      .comment-section {
+          border-top: 1px dashed rgba(0,0,0,0.2);
+      }
+      .comment-trigger {
+          width: 100%;
+          text-align: left;
+          white-space: normal;
+      }
+      .comment-trigger.comment-empty {
+          font-weight: bold;
       }
   </style>
 
@@ -265,11 +361,13 @@ function getDaysInWeek($year, $week) {
                                                                     $bgColor = isset($cityColors[$job['City']]) ? $cityColors[$job['City']] : '#ffffff';
                                                                     $originalDate = $day['date'];
                                                                     $originalAssigneeEncoded = htmlspecialchars($assignee);
+                                                                    $time = date('H:i', strtotime($job['Scheduled start']));
+                                                                    $timeAttr = htmlspecialchars($time, ENT_QUOTES, 'UTF-8');
                                                                     
-                                                                    echo "<div class='job-card draggable-item p-2 mb-2' style='background-color: $bgColor; cursor:move;' data-id='{$job['ID']}' data-original-date='$originalDate' data-original-assignee='$originalAssigneeEncoded'>";
+                                                                    $diffClass = !empty($job['has_difference']) ? ' job-card-diff' : '';
+                                                                    echo "<div class='job-card draggable-item p-2 mb-2$diffClass' style='background-color: $bgColor; cursor:move;' data-id='{$job['ID']}' data-original-date='$originalDate' data-original-assignee='$originalAssigneeEncoded' data-start-time='$timeAttr'>";
                                                                     
                                                                     // Time
-                                                                    $time = date('H:i', strtotime($job['Scheduled start']));
                                                                     echo "<div><strong>$time</strong> <span class='badge badge-light float-right'>" . htmlspecialchars($job['City']) . "</span></div>";
                                                                     
                                                                     // Customer & Phone
@@ -290,6 +388,25 @@ function getDaysInWeek($year, $week) {
                                                                     // Adapter & WOID
                                                                     echo "<div class='mt-1 border-top pt-1'><small>Adapter: " . htmlspecialchars($job['Adapter ID']) . "</small></div>";
                                                                     echo "<div><small>WOID: " . htmlspecialchars($job['Woid']) . "</small></div>";
+
+                                                                    $comment = isset($job['Comment']) ? trim($job['Comment']) : '';
+                                                                    $commentPreviewRaw = '+';
+                                                                    if ($comment !== '') {
+                                                                        $words = array_values(array_filter(preg_split('/\s+/', $comment)));
+                                                                        $previewWords = array_slice($words, 0, 5);
+                                                                        $commentPreviewRaw = implode(' ', $previewWords);
+                                                                        if (count($words) > 5) {
+                                                                            $commentPreviewRaw .= '...';
+                                                                        }
+                                                                    }
+                                                                    $commentPreview = ($comment !== '') ? htmlspecialchars($commentPreviewRaw, ENT_QUOTES, 'UTF-8') : '+';
+                                                                    $commentBtnClasses = ($comment !== '') ? 'btn-outline-secondary' : 'btn-outline-primary comment-empty';
+                                                                    $commentDataAttr = htmlspecialchars($comment, ENT_QUOTES, 'UTF-8');
+                                                                    
+                                                                    echo "<div class='comment-section mt-2 pt-2'>";
+                                                                    echo "<small class='text-muted d-block mb-1'>Komentar</small>";
+                                                                    echo "<button type='button' class='btn btn-sm comment-trigger $commentBtnClasses' data-id='{$job['ID']}' data-comment=\"{$commentDataAttr}\">" . ($comment !== '' ? $commentPreview : '+') . "</button>";
+                                                                    echo "</div>";
                                                                     
                                                                     echo "</div>";
                                                                 }
@@ -334,6 +451,32 @@ function getDaysInWeek($year, $week) {
       </div>
     </div>
 
+    <!-- Comment Modal -->
+    <div class="modal fade" id="commentModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Komentar naloga <span id="commentModalJobId"></span></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-danger d-none" id="commentModalAlert"></div>
+            <input type="hidden" id="commentJobIdInput" value="">
+            <div class="form-group">
+                <label for="commentText">Komentar</label>
+                <textarea id="commentText" class="form-control" rows="5" placeholder="Unesite komentar..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Zatvori</button>
+            <button type="button" class="btn btn-primary" id="commentModalSave">Sačuvaj</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
     $(function() {
         // Initialize Select2 for months
@@ -350,6 +493,77 @@ function getDaysInWeek($year, $week) {
             $('#changesCount').text(count);
         }
 
+        function getCustomerName(item, id) {
+            var customerName = item.find('.text-truncate').first().text().trim();
+            if (!customerName) {
+                customerName = "ID: " + id;
+            }
+            return customerName;
+        }
+
+        function moveCardBackToOriginal(item, originalDate, originalAssignee) {
+            var $targetCell = $('.droppable-cell').filter(function() {
+                return $(this).data('date') === originalDate && $(this).data('assignee') === originalAssignee;
+            }).first();
+
+            if ($targetCell.length) {
+                $targetCell.find('.day-container').append(item);
+            }
+        }
+
+        function persistScheduleChange(payload) {
+            return $.ajax({
+                type: 'POST',
+                url: 'funkcije/raspored_lokalna_update.php',
+                dataType: 'json',
+                data: payload
+            });
+        }
+        
+        function getCommentPreviewText(comment) {
+            if (!comment) {
+                return '+';
+            }
+            var words = comment.trim().split(/\s+/).filter(function(word) {
+                return word.length > 0;
+            });
+            if (!words.length) {
+                return '+';
+            }
+            var previewWords = words.slice(0, 5);
+            var preview = previewWords.join(' ');
+            if (words.length > 5) {
+                preview += '...';
+            }
+            return preview;
+        }
+
+        var activeCommentBtn = null;
+
+        function copyTextToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text);
+            }
+
+            return new Promise(function(resolve, reject) {
+                var $temp = $('<textarea>');
+                $('body').append($temp);
+                $temp.val(text).select();
+                try {
+                    var successful = document.execCommand('copy');
+                    $temp.remove();
+                    if (successful) {
+                        resolve();
+                    } else {
+                        reject(new Error('Copy failed'));
+                    }
+                } catch (err) {
+                    $temp.remove();
+                    reject(err);
+                }
+            });
+        }
+
         $(".day-container").sortable({
             connectWith: ".day-container",
             placeholder: "ui-sortable-placeholder",
@@ -362,31 +576,38 @@ function getDaysInWeek($year, $week) {
                 var id = item.data('id');
                 var originalDate = item.data('original-date');
                 var originalAssignee = item.data('original-assignee');
-                
-                var newDate = $(this).closest('td').data('date');
-                var newAssignee = $(this).closest('td').data('assignee');
-                
+                var $currentCell = $(this).closest('td');
+                var newDate = $currentCell.data('date');
+                var newAssignee = $currentCell.data('assignee');
+
+                if (!newDate) {
+                    return;
+                }
+
                 // Format date for display
                 var dateParts = newDate.split('-');
                 var displayDate = dateParts[2] + '.' + dateParts[1] + '.' + dateParts[0];
-                
+
                 var messages = [];
-                if (newDate !== originalDate) {
+                var dateChanged = newDate !== originalDate;
+                var assigneeChanged = newAssignee !== originalAssignee;
+
+                if (dateChanged) {
                     messages.push("ponovo zakazati za dan " + displayDate);
                 }
-                if (newAssignee !== originalAssignee) {
+                if (assigneeChanged) {
                     messages.push("prebaciti na tim " + newAssignee);
                 }
 
                 // Check for time conflict in the new cell (same day, same assignee)
-                var droppedTimeText = item.find('div:first strong').text().trim(); // e.g. "10:00"
+                var droppedTimeText = item.data('start-time') ? String(item.data('start-time')) : item.find('div:first strong').text().trim(); // e.g. "10:00"
                 var conflictFound = false;
                 
                 // Iterate over other items in the same cell
                 $(this).children('.job-card').each(function() {
                     if ($(this).data('id') == id) return; // Skip self
                     
-                    var existingTimeText = $(this).find('div:first strong').text().trim();
+                    var existingTimeText = $(this).data('start-time') ? String($(this).data('start-time')) : $(this).find('div:first strong').text().trim();
                     if (existingTimeText === droppedTimeText) {
                         conflictFound = true;
                         return false; // break loop
@@ -396,23 +617,160 @@ function getDaysInWeek($year, $week) {
                 if (conflictFound) {
                     messages.push("<span class='text-danger'>već postoji nalog sa istim vremenom (" + droppedTimeText + ")</span>");
                 }
-                
-                if (messages.length > 0) {
-                    // Get Customer Name for context
-                    var customerName = item.find('.text-truncate').first().text().trim();
-                    if(!customerName) customerName = "ID: " + id;
 
-                    changes[id] = {
-                        customer: customerName,
-                        messages: messages
-                    };
-                } else {
-                    delete changes[id];
+                var customerName = getCustomerName(item, id);
+                var hasMovement = dateChanged || assigneeChanged;
+
+                if (!hasMovement) {
+                    if (messages.length > 0) {
+                        changes[id] = {
+                            customer: customerName,
+                            messages: messages
+                        };
+                    } else {
+                        delete changes[id];
+                    }
+                    updateChangesButton();
+                    return;
                 }
-                
-                updateChangesButton();
+
+                var payload = {
+                    id: id,
+                    date: newDate,
+                    time: droppedTimeText,
+                    assignee: newAssignee
+                };
+
+                item.addClass('saving');
+
+                persistScheduleChange(payload)
+                    .done(function() {
+                        item.data('original-date', newDate);
+                        item.attr('data-original-date', newDate);
+                        item.data('original-assignee', newAssignee);
+                        item.attr('data-original-assignee', newAssignee);
+
+                        messages.push("<span class='text-success'>izmena snimljena u bazu</span>");
+
+                        changes[id] = {
+                            customer: customerName,
+                            messages: messages
+                        };
+                    })
+                    .fail(function(xhr) {
+                        moveCardBackToOriginal(item, originalDate, originalAssignee);
+                        var errorText = 'Došlo je do greške prilikom snimanja.';
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorText = xhr.responseJSON.error;
+                        }
+
+                        messages.push("<span class='text-danger'>" + errorText + "</span>");
+
+                        changes[id] = {
+                            customer: customerName,
+                            messages: messages
+                        };
+
+                        item.data('original-date', originalDate);
+                        item.attr('data-original-date', originalDate);
+                        item.data('original-assignee', originalAssignee);
+                        item.attr('data-original-assignee', originalAssignee);
+                    })
+                    .always(function() {
+                        item.removeClass('saving');
+                        updateChangesButton();
+                    });
             }
         }).disableSelection();
+
+        $(document).on('click', '.comment-trigger', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            activeCommentBtn = $(this);
+            var jobId = activeCommentBtn.data('id');
+            var comment = activeCommentBtn.data('comment') || '';
+            $('#commentModalJobId').text('#' + jobId);
+            $('#commentJobIdInput').val(jobId);
+            $('#commentText').val(comment);
+            $('#commentModalAlert').addClass('d-none').text('');
+            $('#commentModal').modal('show');
+            setTimeout(function() {
+                $('#commentText').trigger('focus');
+            }, 300);
+        });
+
+        $('#commentModal').on('hidden.bs.modal', function() {
+            activeCommentBtn = null;
+            $('#commentJobIdInput').val('');
+            $('#commentText').val('');
+            $('#commentModalAlert').addClass('d-none').text('');
+        });
+
+        $('#commentModalSave').click(function() {
+            if (!activeCommentBtn) {
+                return;
+            }
+            var $btn = $(this);
+            var jobId = $('#commentJobIdInput').val();
+            var comment = $('#commentText').val().trim();
+
+            $btn.prop('disabled', true);
+            $('#commentModalAlert').addClass('d-none').text('');
+
+            $.ajax({
+                type: 'POST',
+                url: 'funkcije/raspored_lokalna_comment.php',
+                dataType: 'json',
+                data: {
+                    id: jobId,
+                    comment: comment
+                }
+            }).done(function() {
+                var preview = getCommentPreviewText(comment);
+                activeCommentBtn.data('comment', comment);
+
+                if (preview === '+') {
+                    activeCommentBtn
+                        .text('+')
+                        .removeClass('btn-outline-secondary')
+                        .addClass('btn-outline-primary comment-empty');
+                } else {
+                    activeCommentBtn
+                        .text(preview)
+                        .removeClass('btn-outline-primary comment-empty')
+                        .addClass('btn-outline-secondary');
+                }
+
+                $('#commentModal').modal('hide');
+            }).fail(function(xhr) {
+                var errorText = 'Greška pri snimanju komentara.';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorText = xhr.responseJSON.error;
+                }
+                $('#commentModalAlert').removeClass('d-none').text(errorText);
+            }).always(function() {
+                $btn.prop('disabled', false);
+            });
+        });
+
+        $(document).on('dblclick', '.job-card > div', function(e) {
+            e.stopPropagation();
+            var text = $(this).text().replace(/\s+/g, ' ').trim();
+            if (!text) {
+                return;
+            }
+            var $line = $(this);
+            copyTextToClipboard(text)
+                .then(function() {
+                    $line.addClass('job-card-line-copied');
+                    setTimeout(function() {
+                        $line.removeClass('job-card-line-copied');
+                    }, 900);
+                })
+                .catch(function() {
+                    alert('Kopiranje nije uspelo.');
+                });
+        });
 
         // On click button, populate modal
         $('[data-target="#changesModal"]').click(function() {

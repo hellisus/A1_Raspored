@@ -57,6 +57,7 @@ if (!isset($_SESSION['Ime'])) {
                         if (isset($_POST['import_csv'])) {
                             $stat_inserted = 0;
                             $stat_updated = 0;
+                            $stat_local_inserted = 0;
 
                             if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
                                 $fileTmpPath = $_FILES['csv_file']['tmp_name'];
@@ -131,8 +132,15 @@ if (!isset($_SESSION['Ime'])) {
                                             $dbColumnSet = array_flip($dbColumns);
                                             $emptyColumnFallback = in_array('Empty_Column_1', $dbColumns, true) ? 'Empty_Column_1' : null;
                                             
+                                            // Kolone za lokalnu tabelu
+                                            $stmtLocalCols = $crud->prepare("SHOW COLUMNS FROM `lokalna_tabela`");
+                                            $stmtLocalCols->execute();
+                                            $localDbColumns = $stmtLocalCols->fetchAll(PDO::FETCH_COLUMN);
+                                            $localDbColumnSet = array_flip($localDbColumns);
+                                            
                                             // Pripremimo statement za proveru postojanja ID-ja
                                             $stmtExists = $crud->prepare("SELECT 1 FROM `glavna_tabela` WHERE `ID` = ? LIMIT 1");
+                                            $stmtLocalExists = $crud->prepare("SELECT 1 FROM `lokalna_tabela` WHERE `ID` = ? LIMIT 1");
                                             
                                             $rowIndex = 0;
                                             while (true) {
@@ -291,6 +299,40 @@ if (!isset($_SESSION['Ime'])) {
                                                             die();
                                                         }
                                                     }
+                                                    
+                                                    // Ubacivanje u lokalnu tabelu samo ako ID ne postoji
+                                                    $stmtLocalExists->execute([$id]);
+                                                    $localExists = $stmtLocalExists->fetchColumn();
+                                                    $stmtLocalExists->closeCursor();
+
+                                                    if (empty($localExists)) {
+                                                        $localData = array_intersect_key($dbData, $localDbColumnSet);
+                                                        if (!empty($localData)) {
+                                                            $localCols = [];
+                                                            $localPlaceholders = [];
+                                                            $localValues = [];
+
+                                                            foreach ($localData as $col => $val) {
+                                                                $localCols[] = "`$col`";
+                                                                $localPlaceholders[] = "?";
+                                                                $localValues[] = $val;
+                                                            }
+
+                                                            if (!empty($localCols)) {
+                                                                $localSql = "INSERT INTO `lokalna_tabela` (" . implode(', ', $localCols) . ") VALUES (" . implode(', ', $localPlaceholders) . ")";
+                                                                try {
+                                                                    $stmt = $crud->prepare($localSql);
+                                                                    $stmt->execute($localValues);
+                                                                    $stat_local_inserted++;
+                                                                } catch (PDOException $e) {
+                                                                    echo "<div class='alert alert-danger'>SQL Greška (Insert lokalna) na ID $id: " . $e->getMessage() . "<br>";
+                                                                    echo "SQL: $localSql <br>";
+                                                                    echo "Params: " . json_encode($localValues) . "</div>";
+                                                                    die();
+                                                                }
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                             if ($is_csv && $handle) {
@@ -299,7 +341,8 @@ if (!isset($_SESSION['Ime'])) {
                                             echo "<div class='alert alert-success'>
                                                     <strong>Uspešan import!</strong><br>
                                                     Uvezeno novih naloga: $stat_inserted<br>
-                                                    Ažurirano postojećih naloga: $stat_updated
+                                                    Ažurirano postojećih naloga: $stat_updated<br>
+                                                    Dodato u lokalnu tabelu: $stat_local_inserted
                                                   </div>";
                                         } else {
                                             echo "<div class='alert alert-warning'>Fajl je prazan ili neispravan format zaglavlja.</div>";
