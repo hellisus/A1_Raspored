@@ -16,9 +16,12 @@
                <a href="../php/raspored_lokalna.php">Moja rasporedna tabela</a>
            </li>
            <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
-               <a href="../php/izvestaj_complete.php">Izveštaj</a>
+               <a href="../php/izvestaj_complete.php">Izveštaj gotovih naloga</a>
            </li>
-
+           <li class="<?php if ($_SESSION['tip']  > 2) echo "d-none" ?>">
+               <a href="../php/izvestaj_izmene.php">Izveštaj izmena naloga</a>
+           </li>
+           
           <!-- <li class="<?php if ($_SESSION['tip'] != 1) echo "d-none" ?>">
                <a href="../php/bilans.php">BILANS STANJA</a>
            </li>-->
