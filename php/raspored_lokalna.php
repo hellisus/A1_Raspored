@@ -22,7 +22,7 @@ if (isset($_GET['month']) && is_array($_GET['month'])) {
 $year = isset($_GET['year']) ? (int)$_GET['year'] : (int)date('Y');
 
 // 2. Fetch Data
-$crud = new CRUD('A1_Raspored');
+$crud = new CRUD('srnalozi_a1_raspored');
 
 // Build placeholder string for IN clause (e.g., "?,?,?")
 $placeholders = implode(',', array_fill(0, count($selectedMonths), '?'));
@@ -132,15 +132,19 @@ foreach ($jobs as $job) {
 }
 
 // 4. Color Generation for Cities
-$cityColors = [];
+// Using consistent hashing for city colors
 $predefinedColors = [
     '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc',
     '#e5e5e5', '#f0f0f0', '#d4d4d4', '#ffcccc', '#ccffcc', '#ccccff', '#ffe5b4', '#e6e6fa', '#f0fff0'
 ];
-$i = 0;
+
+$cityColors = [];
 foreach (array_keys($cities) as $city) {
-    $cityColors[$city] = $predefinedColors[$i % count($predefinedColors)];
-    $i++;
+    // CRC32 hash of city name for consistent index
+    // abs() ensures positive number
+    $hash = abs(crc32($city));
+    $index = $hash % count($predefinedColors);
+    $cityColors[$city] = $predefinedColors[$index];
 }
 
 // Sort weeks and assignees
@@ -315,10 +319,6 @@ function getDaysInWeek($year, $week) {
                             </select>
                             
                             <button type="submit" class="btn btn-primary">Prikaži</button>
-                            
-                            <button type="button" class="btn btn-info ml-2" data-toggle="modal" data-target="#changesModal">
-                                Lista izmena <span class="badge badge-light" id="changesCount">0</span>
-                            </button>
                         </form>
                     </div>
                 </div>
@@ -404,7 +404,7 @@ function getDaysInWeek($year, $week) {
                                                                     $commentDataAttr = htmlspecialchars($comment, ENT_QUOTES, 'UTF-8');
                                                                     
                                                                     echo "<div class='comment-section mt-2 pt-2'>";
-                                                                    echo "<small class='text-muted d-block mb-1'>Komentar</small>";
+                                                                    // echo "<small class='text-muted d-block mb-1'>Komentar</small>";
                                                                     echo "<button type='button' class='btn btn-sm comment-trigger $commentBtnClasses' data-id='{$job['ID']}' data-comment=\"{$commentDataAttr}\">" . ($comment !== '' ? $commentPreview : '+') . "</button>";
                                                                     echo "</div>";
                                                                     
@@ -428,35 +428,12 @@ function getDaysInWeek($year, $week) {
         </div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal fade" id="changesModal" tabindex="-1" aria-hidden="true">
+    <!-- Comment Modal -->
+    <div class="modal fade" id="commentModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Lista izmena</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div id="changesList">
-                <p class="text-muted">Nema izmena.</p>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-success" id="downloadChangesBtn">Snimi izmene (TXT)</button>
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Zatvori</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Comment Modal -->
-    <div class="modal fade" id="commentModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Komentar naloga <span id="commentModalJobId"></span></h5>
+            <h5 class="modal-title">Izmena naloga <span id="commentModalJobId"></span></h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
@@ -464,9 +441,34 @@ function getDaysInWeek($year, $week) {
           <div class="modal-body">
             <div class="alert alert-danger d-none" id="commentModalAlert"></div>
             <input type="hidden" id="commentJobIdInput" value="">
+            
+            <div class="form-group">
+                <label for="editScheduledTo">Tim</label>
+                <select id="editScheduledTo" class="form-control">
+                    <!-- Biće popunjeno dinamički -->
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="editDate">Datum</label>
+                    <input type="date" id="editDate" class="form-control">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="editTime">Vreme</label>
+                    <input type="time" id="editTime" class="form-control">
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="commentText">Komentar</label>
-                <textarea id="commentText" class="form-control" rows="5" placeholder="Unesite komentar..."></textarea>
+                <textarea id="commentText" class="form-control" rows="3" placeholder="Unesite komentar..."></textarea>
+            </div>
+
+            <hr>
+            <h6>Istorija izmena</h6>
+            <div id="historyList" style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px;">
+                <p class="text-muted small mb-0">Učitavanje istorije...</p>
             </div>
           </div>
           <div class="modal-footer">
@@ -683,20 +685,72 @@ function getDaysInWeek($year, $week) {
             }
         }).disableSelection();
 
+        // Lista tehničara za dropdown (popunjava se iz uniqueAssignees)
+        var assigneesList = <?php echo json_encode($uniqueAssignees); ?>;
+
         $(document).on('click', '.comment-trigger', function(e) {
             e.preventDefault();
             e.stopPropagation();
             activeCommentBtn = $(this);
             var jobId = activeCommentBtn.data('id');
             var comment = activeCommentBtn.data('comment') || '';
+            
+            // ... (rest of existing logic to get data) ...
+            var $card = activeCommentBtn.closest('.job-card');
+            var $cell = $card.closest('td');
+            var currentAssignee = $cell.data('assignee');
+            
+            var currentDate = $cell.data('date'); // YYYY-MM-DD
+            var currentTime = $card.find('div:first strong').text().trim(); // HH:MM
+
             $('#commentModalJobId').text('#' + jobId);
             $('#commentJobIdInput').val(jobId);
+            
+            // Popunjavanje polja
             $('#commentText').val(comment);
+            $('#editDate').val(currentDate);
+            $('#editTime').val(currentTime);
+            
+            // Popunjavanje select-a tehničarima
+            var $select = $('#editScheduledTo');
+            $select.empty();
+            $.each(assigneesList, function(index, value) {
+                var isSelected = (value === currentAssignee) ? 'selected' : '';
+                $select.append('<option value="' + value + '" ' + isSelected + '>' + value + '</option>');
+            });
+
+            // Učitavanje istorije izmena
+            var $historyList = $('#historyList');
+            $historyList.html('<p class="text-muted small mb-0">Učitavanje istorije...</p>');
+            
+            $.ajax({
+                url: 'funkcije/raspored_lokalna_history.php',
+                method: 'GET',
+                data: { id: jobId },
+                dataType: 'json'
+            }).done(function(data) {
+                $historyList.empty();
+                if (data.length === 0) {
+                    $historyList.html('<p class="text-muted small mb-0">Nema zabeleženih izmena.</p>');
+                } else {
+                    var html = '<ul class="list-unstyled mb-0">';
+                    $.each(data, function(i, item) {
+                        html += '<li class="mb-2 pb-2 border-bottom small">';
+                        html += '<strong>' + item.change_date_formatted + '</strong> - ' + item.user + '<br>';
+                        html += 'Polje: <strong>' + item.field_label + '</strong><br>';
+                        html += '<span class="text-danger">Staro: ' + (item.old_value || '(prazno)') + '</span> &rarr; ';
+                        html += '<span class="text-success">Novo: ' + (item.new_value || '(prazno)') + '</span>';
+                        html += '</li>';
+                    });
+                    html += '</ul>';
+                    $historyList.html(html);
+                }
+            }).fail(function() {
+                $historyList.html('<p class="text-danger small mb-0">Greška pri učitavanju istorije.</p>');
+            });
+
             $('#commentModalAlert').addClass('d-none').text('');
             $('#commentModal').modal('show');
-            setTimeout(function() {
-                $('#commentText').trigger('focus');
-            }, 300);
         });
 
         $('#commentModal').on('hidden.bs.modal', function() {
@@ -713,42 +767,43 @@ function getDaysInWeek($year, $week) {
             var $btn = $(this);
             var jobId = $('#commentJobIdInput').val();
             var comment = $('#commentText').val().trim();
+            var scheduledTo = $('#editScheduledTo').val();
+            var date = $('#editDate').val();
+            var time = $('#editTime').val();
+
+            if (!date || !time) {
+                $('#commentModalAlert').removeClass('d-none').text('Datum i vreme su obavezni.');
+                return;
+            }
 
             $btn.prop('disabled', true);
             $('#commentModalAlert').addClass('d-none').text('');
 
             $.ajax({
                 type: 'POST',
-                url: 'funkcije/raspored_lokalna_comment.php',
+                url: 'funkcije/raspored_lokalna_edit.php', // Promenjen endpoint
                 dataType: 'json',
                 data: {
                     id: jobId,
-                    comment: comment
+                    comment: comment,
+                    scheduled_to: scheduledTo,
+                    date: date,
+                    time: time
                 }
-            }).done(function() {
-                var preview = getCommentPreviewText(comment);
-                activeCommentBtn.data('comment', comment);
-
-                if (preview === '+') {
-                    activeCommentBtn
-                        .text('+')
-                        .removeClass('btn-outline-secondary')
-                        .addClass('btn-outline-primary comment-empty');
+            }).done(function(response) {
+                if (response.error) {
+                    $('#commentModalAlert').removeClass('d-none').text(response.error);
+                    $btn.prop('disabled', false);
                 } else {
-                    activeCommentBtn
-                        .text(preview)
-                        .removeClass('btn-outline-primary comment-empty')
-                        .addClass('btn-outline-secondary');
+                    // Uspešno sačuvano - osveži stranicu
+                    location.reload();
                 }
-
-                $('#commentModal').modal('hide');
             }).fail(function(xhr) {
-                var errorText = 'Greška pri snimanju komentara.';
+                var errorText = 'Greška pri snimanju podataka.';
                 if (xhr.responseJSON && xhr.responseJSON.error) {
                     errorText = xhr.responseJSON.error;
                 }
                 $('#commentModalAlert').removeClass('d-none').text(errorText);
-            }).always(function() {
                 $btn.prop('disabled', false);
             });
         });

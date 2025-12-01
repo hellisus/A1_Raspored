@@ -22,7 +22,7 @@ if (isset($_GET['month']) && is_array($_GET['month'])) {
 $year = isset($_GET['year']) ? (int)$_GET['year'] : (int)date('Y');
 
 // 2. Fetch Data
-$crud = new CRUD('A1_Raspored');
+$crud = new CRUD('srnalozi_a1_raspored');
 
 // Build placeholder string for IN clause (e.g., "?,?,?")
 $placeholders = implode(',', array_fill(0, count($selectedMonths), '?'));

@@ -19,6 +19,7 @@ $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 $newDate = isset($_POST['date']) ? trim($_POST['date']) : '';
 $timeText = isset($_POST['time']) ? trim($_POST['time']) : '';
 $assignee = isset($_POST['assignee']) ? trim($_POST['assignee']) : '';
+$currentUser = $_SESSION['Ime'];
 
 if ($id <= 0 || $newDate === '' || $timeText === '') {
     http_response_code(400);
@@ -41,26 +42,65 @@ if (!$dateTime) {
 $formattedDateTime = $dateTime->format('Y-m-d H:i:s');
 
 try {
-    $crud = new CRUD('A1_Raspored');
+    $crud = new CRUD('srnalozi_a1_raspored');
 
-    $checkStmt = $crud->prepare("SELECT `ID` FROM `lokalna_tabela` WHERE `ID` = ? LIMIT 1");
+    // 1. Fetch current data
+    $checkStmt = $crud->prepare("SELECT `ID`, `Scheduled start`, `Assignees` FROM `lokalna_tabela` WHERE `ID` = ? LIMIT 1");
     $checkStmt->execute([$id]);
-    $taskExists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+    $currentData = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$taskExists) {
+    if (!$currentData) {
         http_response_code(404);
         echo json_encode(['error' => 'Nalog nije pronađen.']);
         exit;
     }
 
+    // 2. Compare and log changes
+    $changes = [];
+    $assigneeValue = $assignee !== '' ? $assignee : null;
+
+    // Compare Assignees
+    $oldAssignee = trim((string)$currentData['Assignees']);
+    $newAssigneeCheck = trim((string)$assigneeValue);
+    if ($oldAssignee !== $newAssigneeCheck) {
+        $changes[] = [
+            'field' => 'Assignees',
+            'old' => $oldAssignee,
+            'new' => $newAssigneeCheck
+        ];
+    }
+
+    // Compare Scheduled start
+    $oldStart = isset($currentData['Scheduled start']) ? date('Y-m-d H:i:s', strtotime($currentData['Scheduled start'])) : '';
+    if ($oldStart !== $formattedDateTime) {
+        $changes[] = [
+            'field' => 'Scheduled start',
+            'old' => $oldStart,
+            'new' => $formattedDateTime
+        ];
+    }
+
+    // 3. Insert changes into history table
+    if (!empty($changes)) {
+        $stmtHistory = $crud->prepare("INSERT INTO istorija_izmena (`job_id`, `user`, `field_name`, `old_value`, `new_value`) VALUES (?, ?, ?, ?, ?)");
+        foreach ($changes as $change) {
+            $stmtHistory->execute([
+                $id,
+                $currentUser,
+                $change['field'],
+                $change['old'],
+                $change['new']
+            ]);
+        }
+    }
+
+    // 4. Update table
     $updateStmt = $crud->prepare("
         UPDATE `lokalna_tabela`
         SET `Scheduled start` = ?, `Assignees` = ?, `Scheduled to` = ?
         WHERE `ID` = ?
         LIMIT 1
     ");
-
-    $assigneeValue = $assignee !== '' ? $assignee : null;
 
     $updateStmt->execute([
         $formattedDateTime,
@@ -79,6 +119,5 @@ try {
     ]);
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Greška pri snimanju promene.']);
+    echo json_encode(['error' => 'Greška pri snimanju promene: ' . $e->getMessage()]);
 }
-

@@ -58,6 +58,8 @@ if (!isset($_SESSION['Ime'])) {
                             $stat_inserted = 0;
                             $stat_updated = 0;
                             $stat_local_inserted = 0;
+                            $stat_local_updated_state = 0;
+                            $local_state_changes = [];
 
                             if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
                                 $fileTmpPath = $_FILES['csv_file']['tmp_name'];
@@ -67,8 +69,8 @@ if (!isset($_SESSION['Ime'])) {
 
                                 if ($fileExtension === 'csv' || $fileExtension === 'xlsx') {
                                     try {
-                                        // Instanciranje CRUD-a, pretpostavljamo da je baza 'A1_Raspored'
-                                        $crud = new CRUD('A1_Raspored');
+                                        // Instanciranje CRUD-a, pretpostavljamo da je baza 'srnalozi_a1_raspored'
+                                        $crud = new CRUD('srnalozi_a1_raspored');
                                         $crud->table = 'glavna_tabela';
 
                                         $headers = null;
@@ -332,6 +334,31 @@ if (!isset($_SESSION['Ime'])) {
                                                                 }
                                                             }
                                                         }
+                                                    } else {
+                                                        // ID postoji u lokalnoj tabeli, proveravamo da li se promenio Current state
+                                                        if (isset($dbData['Current state'])) {
+                                                            $newCurrentState = $dbData['Current state'];
+                                                            
+                                                            // Provera trenutnog stanja u lokalnoj tabeli
+                                                            $stmtLocalState = $crud->prepare("SELECT `Current state` FROM `lokalna_tabela` WHERE `ID` = ? LIMIT 1");
+                                                            $stmtLocalState->execute([$id]);
+                                                            $currentLocalState = $stmtLocalState->fetchColumn();
+                                                            $stmtLocalState->closeCursor();
+                                                            
+                                                            // Ako se stanje razlikuje, ažuriramo lokalnu tabelu
+                                                            if ($currentLocalState !== $newCurrentState) {
+                                                                $updateLocalSql = "UPDATE `lokalna_tabela` SET `Current state` = ? WHERE `ID` = ?";
+                                                                try {
+                                                                    $stmtUpdate = $crud->prepare($updateLocalSql);
+                                                                    $stmtUpdate->execute([$newCurrentState, $id]);
+                                                                    $stat_local_updated_state++;
+                                                                    $local_state_changes[] = "ID $id: '$currentLocalState' -> '$newCurrentState'";
+                                                                } catch (PDOException $e) {
+                                                                    echo "<div class='alert alert-danger'>SQL Greška (Update lokalna) na ID $id: " . $e->getMessage() . "<br>";
+                                                                    die();
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -342,8 +369,22 @@ if (!isset($_SESSION['Ime'])) {
                                                     <strong>Uspešan import!</strong><br>
                                                     Uvezeno novih naloga: $stat_inserted<br>
                                                     Ažurirano postojećih naloga: $stat_updated<br>
-                                                    Dodato u lokalnu tabelu: $stat_local_inserted
+                                                    Dodato u lokalnu tabelu: $stat_local_inserted<br>
+                                                    Ažuriran status u lokalnoj tabeli: $stat_local_updated_state
                                                   </div>";
+                                            
+                                            if (!empty($local_state_changes)) {
+                                                echo "<div class='card mt-3'>
+                                                        <div class='card-header bg-info text-white'>Detalji promena statusa (Lokalna tabela)</div>
+                                                        <div class='card-body' style='max-height: 300px; overflow-y: auto;'>
+                                                            <ul class='list-group list-group-flush'>";
+                                                foreach ($local_state_changes as $change) {
+                                                    echo "<li class='list-group-item py-1'>" . htmlspecialchars($change) . "</li>";
+                                                }
+                                                echo "      </ul>
+                                                        </div>
+                                                      </div>";
+                                            }
                                         } else {
                                             echo "<div class='alert alert-warning'>Fajl je prazan ili neispravan format zaglavlja.</div>";
                                         }

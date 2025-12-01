@@ -55,7 +55,7 @@ if (!isset($_SESSION['Ime'])) {
                     <div class="card-body">
                         <?php
                         // Inicijalizacija CRUD objekta
-                        $crud = new CRUD('A1_Raspored');
+                        $crud = new CRUD('srnalozi_a1_raspored');
                         $crud->table = 'glavna_tabela';
 
                         // Definisane kolone za prikaz

@@ -25,7 +25,7 @@ if ($id <= 0) {
 }
 
 try {
-    $crud = new CRUD('A1_Raspored');
+    $crud = new CRUD('srnalozi_a1_raspored');
 
     $checkStmt = $crud->prepare("SELECT `ID` FROM `lokalna_tabela` WHERE `ID` = ? LIMIT 1");
     $checkStmt->execute([$id]);

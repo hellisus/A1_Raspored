@@ -1,0 +1,20 @@
+Greška **`Class "ZipArchive" not found`** znači da PHP ekstenzija za rad sa ZIP fajlovima nije uključena u vašoj XAMPP instalaciji. Pošto `.xlsx` format zapravo jeste ZIP arhiva, ova ekstenzija je neophodna.
+
+### Kako da rešite problem (Uključivanje ZipArchive):
+
+1.  Pronađite fajl **`php.ini`** u vašem XAMPP folderu. Obično se nalazi na putanji:
+    *   `C:\xampp\php\php.ini` (ili `F:\xampp\php\php.ini` kod vas)
+2.  Otvorite taj fajl u nekom tekst editoru (Notepad, VS Code...).
+3.  Pronađite liniju koja sadrži:
+    ```ini
+    ;extension=zip
+    ```
+4.  **Uklonite tačka-zarez (;)** sa početka te linije da bi izgledala ovako:
+    ```ini
+    extension=zip
+    ```
+5.  Sačuvajte izmene u fajlu.
+6.  **Restartujte Apache server** preko XAMPP Control Panela (kliknite Stop pa Start pored Apache).
+
+Nakon ovoga, osvežite stranicu i probajte export ponovo. Ekstenzija bi trebalo da bude učitana.
+

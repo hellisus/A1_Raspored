@@ -2,7 +2,7 @@
 
 require  'config.php';
 
-$baza = 'a1_raspored';
+$baza = 'srnalozi_a1_raspored';
 
 // Dozvoli samo POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
