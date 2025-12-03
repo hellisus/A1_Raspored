@@ -163,9 +163,13 @@ function getDaysInWeek($year, $week) {
     
     for ($i = 0; $i < 7; $i++) {
         $dayIndex = (int)$dto->format('N') - 1; // 1 (Mon) - 7 (Sun) -> 0 - 6
+        $dayLabel = $daysSerbian[$dayIndex];
+        $dateLabel = $dto->format('d.m');
         $ret[] = [
             'date' => $dto->format('Y-m-d'),
-            'display' => $daysSerbian[$dayIndex] . ' ' . $dto->format('d.m'), // Pon 25.11
+            'display' => $dayLabel . ' ' . $dateLabel, // Pon 25.11
+            'display_day' => $dayLabel,
+            'display_date' => $dateLabel,
             'display_full' => $dto->format('l d.m.Y')
         ];
         $dto->modify('+1 day');
@@ -208,10 +212,50 @@ function getDaysInWeek($year, $week) {
   <script src="../src/js/funkcije.js"></script>
   
   <style>
+    :root {
+        --page-top-offset: 0px;
+        --week-card-header-height: 44px;
+        --table-header-row-height: 34px;
+    }
+       .schedule-table-wrapper {
+           position: relative;
+           overflow-x: auto;
+       }
+      .week-card-header {
+           position: sticky;
+           top: var(--page-top-offset, 0px);
+           z-index: 9;
+          min-height: var(--week-card-header-height, 44px);
+          height: var(--week-card-header-height, 44px);
+           display: flex;
+           align-items: center;
+       }
+   .schedule-table-wrapper table thead th {
+      position: static;
+   }
+  .table-sticky-row-1,
+  .table-sticky-row-2 {
+      background-color: #f8f9fa;
+      box-shadow: inset 0 -1px 0 rgba(0,0,0,0.2);
+  }
+  .table-sticky-row-1 {
+      position: sticky;
+      top: calc(var(--page-top-offset, 0px) + var(--week-card-header-height, 44px));
+      z-index: 8;
+      min-height: var(--table-header-row-height, 34px);
+  }
+  .table-sticky-row-2 {
+      position: sticky;
+      top: calc(var(--page-top-offset, 0px) + var(--week-card-header-height, 44px) + var(--table-header-row-height, 34px));
+      z-index: 7;
+      min-height: var(--table-header-row-height, 34px);
+  }
       .job-card {
-          font-size: 0.85rem;
+          font-size: 0.82rem;
           border-radius: 4px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          padding: 2px 6px;
+          margin-bottom: 3px;
       }
       .job-card.job-card-diff {
           border: 2px solid #dc3545;
@@ -259,16 +303,23 @@ function getDaysInWeek($year, $week) {
       .select2-container .select2-selection--multiple {
           min-height: 38px;
       }
-      .comment-section {
-          border-top: 1px dashed rgba(0,0,0,0.2);
-      }
       .comment-trigger {
-          width: 100%;
-          text-align: left;
-          white-space: normal;
+          width: 26px;
+          height: 26px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
       }
       .comment-trigger.comment-empty {
           font-weight: bold;
+      }
+      .job-card .job-row {
+          margin-bottom: 2px;
+      }
+      .job-card .job-row:last-child {
+          margin-bottom: 0;
       }
   </style>
 
@@ -333,17 +384,24 @@ function getDaysInWeek($year, $week) {
                             $days = getDaysInWeek($wYear, $wNum);
                         ?>
                         <div class="card mb-4">
-                            <div class="card-header bg-secondary text-white">
+                            <div class="card-header bg-secondary text-white week-card-header">
                                 <strong>Nedelja od <?php echo date('d.m.Y', strtotime($days[0]['date'])); ?> do <?php echo date('d.m.Y', strtotime($days[6]['date'])); ?></strong>
                             </div>
-                            <div class="card-body p-0 table-responsive">
+                            <div class="card-body p-0 table-responsive schedule-table-wrapper">
                                 <table class="table table-bordered table-sm mb-0" style="table-layout: fixed; min-width: 1200px;">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th style="width: 150px;">Tim</th>
+                                            <th class="table-sticky-row-1 align-middle" rowspan="2" style="width: 150px;">Tim</th>
                                             <?php foreach ($days as $day): ?>
-                                                <th class="text-center">
-                                                    <?php echo $day['display']; ?>
+                                                <th class="text-center table-sticky-row-1">
+                                                    <?php echo $day['display_date']; ?>
+                                                </th>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                        <tr>
+                                            <?php foreach ($days as $day): ?>
+                                                <th class="text-center table-sticky-row-2">
+                                                    <?php echo $day['display_day']; ?>
                                                 </th>
                                             <?php endforeach; ?>
                                         </tr>
@@ -365,30 +423,10 @@ function getDaysInWeek($year, $week) {
                                                                     $timeAttr = htmlspecialchars($time, ENT_QUOTES, 'UTF-8');
                                                                     
                                                                     $diffClass = !empty($job['has_difference']) ? ' job-card-diff' : '';
-                                                                    echo "<div class='job-card draggable-item p-2 mb-2$diffClass' style='background-color: $bgColor; cursor:move;' data-id='{$job['ID']}' data-original-date='$originalDate' data-original-assignee='$originalAssigneeEncoded' data-start-time='$timeAttr'>";
+                                                                    $adapterValue = isset($job['Adapter ID']) ? $job['Adapter ID'] : '';
+                                                                    $adapterAttr = htmlspecialchars($adapterValue, ENT_QUOTES, 'UTF-8');
+                                                                    echo "<div class='job-card draggable-item py-0 px-1 mb-1$diffClass' style='background-color: $bgColor; cursor:move;' data-id='{$job['ID']}' data-original-date='$originalDate' data-original-assignee='$originalAssigneeEncoded' data-start-time='$timeAttr' data-adapter='$adapterAttr'>";
                                                                     
-                                                                    // Time
-                                                                    echo "<div><strong>$time</strong> <span class='badge badge-light float-right'>" . htmlspecialchars($job['City']) . "</span></div>";
-                                                                    
-                                                                    // Customer & Phone
-                                                                    echo "<div class='text-truncate' title='" . htmlspecialchars($job['Customer Name']) . "'>";
-                                                                    echo "<i class='fas fa-user'></i> " . htmlspecialchars($job['Customer Name']);
-                                                                    echo "</div>";
-                                                                    
-                                                                    echo "<div><small><i class='fas fa-phone'></i> " . htmlspecialchars($job['Contact Phone On Location']) . "</small></div>";
-                                                                    
-                                                                    // Type
-                                                                    echo "<div><small><strong>" . htmlspecialchars($job['WO_InstallationType']) . "</strong></small></div>";
-                                                                    
-                                                                    // Address
-                                                                    echo "<div class='text-truncate' title='" . htmlspecialchars($job['Address']) . " " . htmlspecialchars($job['House Number']) . "'>";
-                                                                    echo "<i class='fas fa-map-marker-alt'></i> " . htmlspecialchars($job['Address']) . " " . htmlspecialchars($job['House Number']);
-                                                                    echo "</div>";
-                                                                    
-                                                                    // Adapter & WOID
-                                                                    echo "<div class='mt-1 border-top pt-1'><small>Adapter: " . htmlspecialchars($job['Adapter ID']) . "</small></div>";
-                                                                    echo "<div><small>WOID: " . htmlspecialchars($job['Woid']) . "</small></div>";
-
                                                                     $comment = isset($job['Comment']) ? trim($job['Comment']) : '';
                                                                     $commentPreviewRaw = '+';
                                                                     if ($comment !== '') {
@@ -399,14 +437,37 @@ function getDaysInWeek($year, $week) {
                                                                             $commentPreviewRaw .= '...';
                                                                         }
                                                                     }
-                                                                    $commentPreview = ($comment !== '') ? htmlspecialchars($commentPreviewRaw, ENT_QUOTES, 'UTF-8') : '+';
                                                                     $commentBtnClasses = ($comment !== '') ? 'btn-outline-secondary' : 'btn-outline-primary comment-empty';
                                                                     $commentDataAttr = htmlspecialchars($comment, ENT_QUOTES, 'UTF-8');
+                                                                    $commentBtnTitleRaw = ($comment !== '') ? $commentPreviewRaw : 'Dodaj komentar';
+                                                                    $commentBtnTitle = htmlspecialchars($commentBtnTitleRaw, ENT_QUOTES, 'UTF-8');
                                                                     
-                                                                    echo "<div class='comment-section mt-2 pt-2'>";
-                                                                    // echo "<small class='text-muted d-block mb-1'>Komentar</small>";
-                                                                    echo "<button type='button' class='btn btn-sm comment-trigger $commentBtnClasses' data-id='{$job['ID']}' data-comment=\"{$commentDataAttr}\">" . ($comment !== '' ? $commentPreview : '+') . "</button>";
+                                                                    // Time + Comment trigger + City
+                                                                    echo "<div class='d-flex align-items-center job-row'>";
+                                                                    echo "<strong class='mr-2'>$time</strong>";
+                                                                    echo "<button type='button' class='btn btn-sm comment-trigger $commentBtnClasses mx-1' data-id='{$job['ID']}' data-comment=\"{$commentDataAttr}\" title='{$commentBtnTitle}'>+</button>";
+                                                                    echo "<span class='badge badge-light ml-auto'>" . htmlspecialchars($job['City']) . "</span>";
                                                                     echo "</div>";
+                                                                    
+                                                                    // Customer & Phone
+                                                                    echo "<div class='text-truncate job-row' title='" . htmlspecialchars($job['Customer Name']) . "'>";
+                                                                    echo "<i class='fas fa-user'></i> " . htmlspecialchars($job['Customer Name']);
+                                                                    echo "</div>";
+                                                                    
+                                                                    echo "<div class='d-flex align-items-center job-row'>";
+                                                                    echo "<small class='text-monospace mr-2'>" . htmlspecialchars($job['Woid']) . "</small>";
+                                                                    echo "<small><i class='fas fa-phone'></i> " . htmlspecialchars($job['Contact Phone On Location']) . "</small>";
+                                                                    echo "</div>";
+                                                                    
+                                                                    // Type
+                                                                    echo "<div class='job-row'><small><strong>" . htmlspecialchars($job['WO_InstallationType']) . "</strong></small></div>";
+                                                                    
+                                                                    // Address
+                                                                    echo "<div class='text-truncate job-row' title='" . htmlspecialchars($job['Address']) . " " . htmlspecialchars($job['House Number']) . "'>";
+                                                                    echo "<i class='fas fa-map-marker-alt'></i> " . htmlspecialchars($job['Address']) . " " . htmlspecialchars($job['House Number']);
+                                                                    echo "</div>";
+                                                                    
+                                                                    // Adapter moved to modal; WOID shown beside phone
                                                                     
                                                                     echo "</div>";
                                                                 }
@@ -458,6 +519,11 @@ function getDaysInWeek($year, $week) {
                     <label for="editTime">Vreme</label>
                     <input type="time" id="editTime" class="form-control">
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label for="editAdapter">Adapter</label>
+                <input type="text" id="editAdapter" class="form-control" readonly>
             </div>
 
             <div class="form-group">
@@ -710,6 +776,7 @@ function getDaysInWeek($year, $week) {
             $('#commentText').val(comment);
             $('#editDate').val(currentDate);
             $('#editTime').val(currentTime);
+            $('#editAdapter').val($card.data('adapter') || '');
             
             // Popunjavanje select-a tehničarima
             var $select = $('#editScheduledTo');
@@ -757,6 +824,7 @@ function getDaysInWeek($year, $week) {
             activeCommentBtn = null;
             $('#commentJobIdInput').val('');
             $('#commentText').val('');
+            $('#editAdapter').val('');
             $('#commentModalAlert').addClass('d-none').text('');
         });
 
