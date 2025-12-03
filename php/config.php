@@ -29,3 +29,5 @@ function hash256($string_za_hesh)
 {
 	return hash('sha256', $string_za_hesh . SALT);
 }
+
+//echo hash256('111');
