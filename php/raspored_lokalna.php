@@ -484,7 +484,7 @@ function getDaysInWeek($year, $week) {
                                                                     echo "<div class='d-flex align-items-center job-row'>";
                                                                     echo "<strong class='mr-2'>$time</strong>";
                                                                     echo "<button type='button' class='btn btn-sm comment-trigger $commentBtnClasses mx-1' data-id='{$job['ID']}' data-comment=\"{$commentDataAttr}\" title='{$commentBtnTitle}'>+</button>";
-                                                                    echo "<button type='button' class='btn btn-sm btn-outline-danger finalize-trigger mx-1' data-id='{$job['ID']}' title='Označi kao Finalized (ukloni sa rasporeda)'>&times;</button>";
+                                                                    echo "<button type='button' class='btn btn-sm btn-outline-danger finalize-trigger mx-1' data-id='{$job['ID']}' title='Označi kao završen'>&times;</button>";
                                                                     echo "<span class='badge badge-light ml-auto'>" . htmlspecialchars($job['City']) . "</span>";
                                                                     echo "</div>";
                                                                     
@@ -584,6 +584,40 @@ function getDaysInWeek($year, $week) {
       </div>
     </div>
 
+    <!-- Finalize Modal -->
+    <div class="modal fade" id="finalizeModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Promena statusa naloga <span id="finalizeModalJobId"></span></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-danger d-none" id="finalizeModalAlert"></div>
+            <p>Odaberite status u koji želite da prebacite nalog:</p>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="finalizeStatus" id="finalizeStatusFinalized" value="Finalized" checked>
+              <label class="form-check-label" for="finalizeStatusFinalized">
+                Završen
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="finalizeStatus" id="finalizeStatusCanceled" value="Canceled">
+              <label class="form-check-label" for="finalizeStatusCanceled">
+                Otkazan
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Odustani</button>
+            <button type="button" class="btn btn-danger" id="finalizeModalSave">Sačuvaj</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
     $(function() {
         // Initialize Select2 for months
@@ -594,6 +628,12 @@ function getDaysInWeek($year, $week) {
         });
 
         var changes = {};
+        var finalizeModal = $('#finalizeModal');
+        var finalizeModalAlert = $('#finalizeModalAlert');
+        var finalizeModalSaveBtn = $('#finalizeModalSave');
+        var finalizeJobId = null;
+        var finalizeTargetCard = null;
+        var finalizeTargetBtn = null;
 
         function updateChangesButton() {
             var count = Object.keys(changes).length;
@@ -993,38 +1033,67 @@ function getDaysInWeek($year, $week) {
             e.preventDefault();
             e.stopPropagation();
             
-            var btn = $(this);
-            var id = btn.data('id');
+            finalizeTargetBtn = $(this);
+            finalizeTargetCard = finalizeTargetBtn.closest('.job-card');
+            finalizeJobId = finalizeTargetBtn.data('id');
             
-            if (!confirm('Da li ste sigurni da želite da označite ovaj nalog kao Finalized i uklonite ga sa rasporeda?')) {
+            $('#finalizeModalJobId').text('#' + finalizeJobId);
+            $('input[name="finalizeStatus"][value="Finalized"]').prop('checked', true);
+            finalizeModalAlert.addClass('d-none').text('');
+            finalizeModalSaveBtn.prop('disabled', false);
+            
+            finalizeModal.modal('show');
+        });
+
+        $('#finalizeModal').on('hidden.bs.modal', function() {
+            finalizeJobId = null;
+            finalizeTargetCard = null;
+            finalizeTargetBtn = null;
+            finalizeModalAlert.addClass('d-none').text('');
+            finalizeModalSaveBtn.prop('disabled', false);
+        });
+
+        $('#finalizeModalSave').click(function() {
+            if (!finalizeJobId) {
                 return;
             }
             
-            // Prevent double clicks
-            btn.prop('disabled', true);
+            var selectedStatus = $('input[name="finalizeStatus"]:checked').val();
+            if (!selectedStatus) {
+                finalizeModalAlert.removeClass('d-none').text('Molimo izaberite status.');
+                return;
+            }
+            
+            finalizeModalSaveBtn.prop('disabled', true);
+            finalizeModalAlert.addClass('d-none').text('');
             
             $.ajax({
                 type: 'POST',
                 url: 'funkcije/raspored_lokalna_finalize.php',
                 dataType: 'json',
-                data: { id: id }
+                data: {
+                    id: finalizeJobId,
+                    status: selectedStatus
+                }
             }).done(function(response) {
                 if (response.success) {
-                    // Remove the card from UI with a fade out effect
-                    btn.closest('.job-card').fadeOut(400, function() {
-                        $(this).remove();
-                    });
+                    if (finalizeTargetCard) {
+                        finalizeTargetCard.fadeOut(400, function() {
+                            $(this).remove();
+                        });
+                    }
+                    finalizeModal.modal('hide');
                 } else {
-                    alert('Greška: ' + (response.error || 'Nepoznata greška'));
-                    btn.prop('disabled', false);
+                    finalizeModalAlert.removeClass('d-none').text(response.error || 'Nepoznata greška.');
+                    finalizeModalSaveBtn.prop('disabled', false);
                 }
             }).fail(function(xhr) {
                 var errorMsg = 'Greška pri komunikaciji sa serverom.';
                 if (xhr.responseJSON && xhr.responseJSON.error) {
                     errorMsg = xhr.responseJSON.error;
                 }
-                alert(errorMsg);
-                btn.prop('disabled', false);
+                finalizeModalAlert.removeClass('d-none').text(errorMsg);
+                finalizeModalSaveBtn.prop('disabled', false);
             });
         });
     });

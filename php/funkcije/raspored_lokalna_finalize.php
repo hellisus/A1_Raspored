@@ -16,11 +16,19 @@ if (!isset($_SESSION['Ime'])) {
 }
 
 $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+$status = isset($_POST['status']) ? trim($_POST['status']) : 'Finalized';
 $currentUser = $_SESSION['Ime'];
+$allowedStatuses = ['Finalized', 'Canceled'];
 
 if ($id <= 0) {
     http_response_code(400);
     echo json_encode(['error' => 'Neispravan ID naloga.']);
+    exit;
+}
+
+if (!in_array($status, $allowedStatuses, true)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Neispravan status.']);
     exit;
 }
 
@@ -39,7 +47,7 @@ try {
     }
 
     $oldState = isset($currentData['Current state']) ? $currentData['Current state'] : null;
-    $newState = 'Finalized';
+    $newState = $status;
 
     // 2. Log change in history if state is different
     if ($oldState !== $newState) {
@@ -59,8 +67,9 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => 'Nalog je uspešno označen kao završen.',
-        'id' => $id
+        'message' => 'Status naloga je uspešno izmenjen.',
+        'id' => $id,
+        'status' => $newState
     ]);
 
 } catch (Exception $e) {
