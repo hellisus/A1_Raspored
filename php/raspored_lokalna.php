@@ -150,7 +150,18 @@ foreach (array_keys($cities) as $city) {
 // Sort weeks and assignees
 ksort($schedule);
 $uniqueAssignees = array_keys($assigneesInMonth);
-sort($uniqueAssignees);
+natcasesort($uniqueAssignees);
+$uniqueAssignees = array_values($uniqueAssignees);
+
+$vanrednaTeamName = 'Vanredna ekipa';
+// Uvek osiguraj da je Vanredna ekipa poslednja u koloni Tim
+$uniqueAssignees = array_values(array_filter(
+    $uniqueAssignees,
+    function ($assignee) use ($vanrednaTeamName) {
+        return $assignee !== $vanrednaTeamName;
+    }
+));
+$uniqueAssignees[] = $vanrednaTeamName;
 
 // Helper to get days of week for a specific week number
 function getDaysInWeek($year, $week) {
