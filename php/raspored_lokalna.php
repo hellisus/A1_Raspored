@@ -104,6 +104,11 @@ $assigneesInMonth = [];
 $cities = [];
 
 foreach ($jobs as $job) {
+    // Clean city name to ensure matching
+    if (isset($job['City'])) {
+        $job['City'] = trim($job['City']);
+    }
+
     $assignee = !empty($job['Assignees']) ? $job['Assignees'] : 'Unassigned';
     $assigneesInMonth[$assignee] = true;
     
@@ -132,7 +137,21 @@ foreach ($jobs as $job) {
 }
 
 // 4. Color Generation for Cities
-// Using consistent hashing for city colors
+// Specific colors for requested cities, others use consistent hashing
+$specificColors = [
+    'Novi Sad' => '#e0e0e0',      // Svetlo siva
+    'Subotica' => '#ffadad',      // Crvena (pastelna)
+    'Zrenjanin' => '#a0c4ff',     // Plava (pastelna)
+    'Ruma' => '#ffd6a5',          // Narandžasta (pastelna)
+    'Bačka Palanka' => '#caffbf'  // Zelena (pastelna)
+];
+
+// Create normalized map for case-insensitive matching
+$normalizedSpecificColors = [];
+foreach ($specificColors as $key => $val) {
+    $normalizedSpecificColors[mb_strtolower($key, 'UTF-8')] = $val;
+}
+
 $predefinedColors = [
     '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc',
     '#e5e5e5', '#f0f0f0', '#d4d4d4', '#ffcccc', '#ccffcc', '#ccccff', '#ffe5b4', '#e6e6fa', '#f0fff0'
@@ -140,11 +159,18 @@ $predefinedColors = [
 
 $cityColors = [];
 foreach (array_keys($cities) as $city) {
-    // CRC32 hash of city name for consistent index
-    // abs() ensures positive number
-    $hash = abs(crc32($city));
-    $index = $hash % count($predefinedColors);
-    $cityColors[$city] = $predefinedColors[$index];
+    // Check if specific color is defined for this city (case-insensitive)
+    $normalizedCity = mb_strtolower($city, 'UTF-8');
+    
+    if (isset($normalizedSpecificColors[$normalizedCity])) {
+        $cityColors[$city] = $normalizedSpecificColors[$normalizedCity];
+    } else {
+        // CRC32 hash of city name for consistent index
+        // abs() ensures positive number
+        $hash = abs(crc32($city));
+        $index = $hash % count($predefinedColors);
+        $cityColors[$city] = $predefinedColors[$index];
+    }
 }
 
 // Sort weeks and assignees
@@ -314,7 +340,8 @@ function getDaysInWeek($year, $week) {
       .select2-container .select2-selection--multiple {
           min-height: 38px;
       }
-      .comment-trigger {
+      .comment-trigger,
+      .finalize-trigger {
           width: 26px;
           height: 26px;
           padding: 0;
@@ -457,6 +484,7 @@ function getDaysInWeek($year, $week) {
                                                                     echo "<div class='d-flex align-items-center job-row'>";
                                                                     echo "<strong class='mr-2'>$time</strong>";
                                                                     echo "<button type='button' class='btn btn-sm comment-trigger $commentBtnClasses mx-1' data-id='{$job['ID']}' data-comment=\"{$commentDataAttr}\" title='{$commentBtnTitle}'>+</button>";
+                                                                    echo "<button type='button' class='btn btn-sm btn-outline-danger finalize-trigger mx-1' data-id='{$job['ID']}' title='Označi kao Finalized (ukloni sa rasporeda)'>&times;</button>";
                                                                     echo "<span class='badge badge-light ml-auto'>" . htmlspecialchars($job['City']) . "</span>";
                                                                     echo "</div>";
                                                                     
@@ -958,6 +986,46 @@ function getDaysInWeek($year, $week) {
                 link.click();
                 document.body.removeChild(link);
             }
+        });
+
+        // Finalize button handler (x button)
+        $(document).on('click', '.finalize-trigger', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var btn = $(this);
+            var id = btn.data('id');
+            
+            if (!confirm('Da li ste sigurni da želite da označite ovaj nalog kao Finalized i uklonite ga sa rasporeda?')) {
+                return;
+            }
+            
+            // Prevent double clicks
+            btn.prop('disabled', true);
+            
+            $.ajax({
+                type: 'POST',
+                url: 'funkcije/raspored_lokalna_finalize.php',
+                dataType: 'json',
+                data: { id: id }
+            }).done(function(response) {
+                if (response.success) {
+                    // Remove the card from UI with a fade out effect
+                    btn.closest('.job-card').fadeOut(400, function() {
+                        $(this).remove();
+                    });
+                } else {
+                    alert('Greška: ' + (response.error || 'Nepoznata greška'));
+                    btn.prop('disabled', false);
+                }
+            }).fail(function(xhr) {
+                var errorMsg = 'Greška pri komunikaciji sa serverom.';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg = xhr.responseJSON.error;
+                }
+                alert(errorMsg);
+                btn.prop('disabled', false);
+            });
         });
     });
     </script>
